@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Support Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        /* Floating button styles */
+        #chatbot-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007BFF;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50%;
+            font-size: 24px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        /* Chatbot window styles */
+        #chatbot-container {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 300px;
+    height: 500px;
+    background-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto; /* Scroll enabled for overflow content */
+    box-sizing: border-box;
+}
+
+        #chatbot-container h2 {
+            font-size: 18px;
+            margin-top: 0;
+        }
+        #chatbot-container input,
+        #chatbot-container button {
+            width: calc(100% - 45px);
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #chatbot-container button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        #chatbot-container #answer {
+            margin-top: 15px;
+        }
+        #loading {
+            display: none;
+            color: blue;
+            margin-top: 10px;
+        }
+        .voice-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: none;
+        }
+        .voice-icon.active {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Chatbot Button -->
+    <button id="chatbot-btn" onclick="toggleChatbot()">💬</button>
+
+    <!-- Chatbot Container -->
+    <div id="chatbot-container">
+        <h2>Customer Support Chatbot</h2>
+
+        <!-- Upload Form -->
+        <form id="upload-form">
+            <label for="pdf">Upload PDF:</label>
+            <input type="file" id="pdf" name="pdf" accept="application/pdf" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <div id="loading">Loading embeddings...</div>
+
+        <!-- Question Form -->
+        <div id="qa-section" style="display: none;">
+            <h3>Ask a Question</h3>
+            <div style="display: flex; align-items: center;">
+                <input type="text" id="question" placeholder="Enter your question">
+                <div id="voice-btn" class="voice-icon">🎤</div>
+            </div>
+            <button id="ask-btn">Ask</button>
+            <div id="answer">
+                <span id="response-text"></span>
+                <button id="listen-btn" style="display: none;">🔊 Listen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle chatbot visibility
+        function toggleChatbot() {
+            const chatbotContainer = document.getElementById('chatbot-container');
+            chatbotContainer.style.display = chatbotContainer.style.display === 'none' || chatbotContainer.style.display === '' ? 'block' : 'none';
+        }
+
+        // Speech recognition setup
+        const voiceBtn = document.getElementById('voice-btn');
+        let recognition;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                voiceBtn.classList.add('active');
+            };
+
+            recognition.onend = () => {
+                voiceBtn.classList.remove('active');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('question').value = transcript;
+            };
+        } else {
+            alert('Speech Recognition API is not supported in this browser.');
+        }
+
+        voiceBtn.addEventListener('click', () => {
+            if (recognition) recognition.start();
+        });
+
+        // Upload form submission
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pdf = document.getElementById('pdf').files[0];
+            if (!pdf) return alert('Please select a PDF file.');
+
+            const formData = new FormData();
+            formData.append('pdf', pdf);
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('qa-section').style.display = 'none';
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+
+            document.getElementById('loading').style.display = 'none';
+
+            if (result.status === 'success') {
+                alert(result.message);
+                document.getElementById('qa-section').style.display = 'block';
+            } else {
+                alert(result.message);
+            }
+        });
+
+        // Ask question button in the chatbot interface
+        document.getElementById('ask-btn').addEventListener('click', async () => {
+            const question = document.getElementById('question').value;
+            if (!question) return alert('Please enter a question.');
+
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question }),
+            });
+            const result = await response.json();
+
+            const responseText = document.getElementById('response-text');
+            const listenBtn = document.getElementById('listen-btn');
+
+            if (result.status === 'success') {
+                responseText.innerText = `Answer: ${result.answer}`;
+                listenBtn.style.display = 'inline-block'; // Show the listen button
+
+                // Attach click event to the listen button
+                listenBtn.onclick = () => {
+                    const utterance = new SpeechSynthesisUtterance(result.answer);
+                    utterance.lang = 'en-US';
+                    window.speechSynthesis.speak(utterance);
+                };
+            } else {
+                responseText.innerText = '';
+                listenBtn.style.display = 'none'; // Hide the listen button
+                alert(result.message);
+            }
+        });
+    </script>
+</body>
+</html>
