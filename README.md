@@ -1,6 +1,3 @@
-Got it! Here's the updated README tailored to your repository:
-
-```markdown
 # Customer Support Chatbot with PDF Upload and Question Answering
 
 This repository contains a Flask-based web application for customer support that allows users to upload PDF documents, process them into embeddings, and then ask questions based on the content of those PDFs. The application utilizes powerful language models such as Groq and Google Generative AI for generating responses, and integrates voice recognition to convert spoken questions into text.
@@ -26,7 +23,7 @@ This repository contains a Flask-based web application for customer support that
 1. Clone this repository:
    ```bash
    git clone https://github.com/syedhabibahmad/chatbot.git
-   ```
+
 
 2. Navigate to the project directory:
    ```bash
@@ -61,7 +58,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-For any questions or support, feel free to contact me at [your-email@example.com](mailto:your-email@example.com).
+For any questions or support, feel free to contact me at [your-email@example.com](hafizsyedhabibahmadg@gmail.com).
 
 ---
 
